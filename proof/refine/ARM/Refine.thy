@@ -243,7 +243,7 @@ lemma kernel_entry_valid_sched:
   "\<lbrace>\<lambda>s. valid_sched s \<and> invs s \<and> schact_is_rct s
         \<and> cur_sc_active s \<and> ct_not_in_release_q s
         \<and> (ct_running s \<or> ct_idle s) \<and> (e \<noteq> Interrupt \<longrightarrow> ct_running s)
-        \<and> valid_machine_time s \<and> current_time_bounded 5 s \<and> consumed_time_bounded s
+        \<and> valid_machine_time s \<and> current_time_bounded s \<and> consumed_time_bounded s
         \<and> cur_sc_offset_ready (consumed_time s) s
         \<and> cur_sc_offset_sufficient (consumed_time s) s\<rbrace>
    kernel_entry e us
@@ -258,7 +258,7 @@ abbreviation (input) mcs_invs where
   "mcs_invs s \<equiv> einvs s
                  \<and> scheduler_action s = resume_cur_thread
                  \<and> cur_sc_active s \<and> ct_not_in_release_q s
-                 \<and> valid_machine_time s \<and> current_time_bounded 5 s \<and> consumed_time_bounded s
+                 \<and> valid_machine_time s \<and> current_time_bounded s \<and> consumed_time_bounded s
                  \<and> (cur_sc_offset_ready (consumed_time s) s
                     \<and> cur_sc_offset_sufficient (consumed_time s) s)
                  \<and> (0 < domain_time s) \<and> valid_domain_list s "
@@ -274,7 +274,7 @@ lemma kernel_entry_invs:
                            \<and> (0 < domain_time s) \<and> valid_domain_list s
                            \<and> valid_list s \<and> scheduler_action s = resume_cur_thread
                            \<and> cur_sc_active s \<and> ct_not_in_release_q s
-                           \<and> valid_machine_time s \<and> current_time_bounded 5 s
+                           \<and> valid_machine_time s \<and> current_time_bounded s
                            \<and> consumed_time_bounded s"
             in hoare_post_imp)
    apply clarsimp
@@ -321,7 +321,7 @@ lemma kernel_entry_invs:
    apply wpsimp
   apply (rule hoare_vcg_conj_lift_pre_fix)
    apply (clarsimp simp: kernel_entry_def)
-   apply (wpsimp wp: call_kernel_current_time_bounded_5)
+   apply (wpsimp wp: call_kernel_current_time_bounded)
   apply (clarsimp simp: kernel_entry_def)
   apply (wpsimp wp: call_kernel_consumed_time_bounded)
   done
@@ -342,7 +342,7 @@ crunches do_user_op, check_active_irq
   and domain_time[wp]: "\<lambda>s. P (domain_time s)"
   and cur_sc_active[wp]: cur_sc_active
   and ct_not_in_release_q[wp]: ct_not_in_release_q
-  and current_time_bounded[wp]: "current_time_bounded 5"
+  and current_time_bounded[wp]: current_time_bounded
   and cur_sc_offset_ready[wp]: "\<lambda>s. cur_sc_offset_ready (consumed_time s) s"
   and cur_sc_offset_sufficient[wp]: "\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s"
   and consumed_time_bounded[wp]: consumed_time_bounded
@@ -377,9 +377,9 @@ lemma do_user_op_invs2:
    \<lbrace>\<lambda>s. mcs_invs s \<and> ct_running s\<rbrace>"
   apply (rule_tac Q="\<lambda>_ s. (invs s \<and> ct_running s) \<and> valid_list s \<and> valid_sched s
                            \<and> scheduler_action s = resume_cur_thread
-                           \<and> (0 < domain_time s)  \<and> valid_domain_list s
+                           \<and> (0 < domain_time s) \<and> valid_domain_list s
                            \<and> cur_sc_active s \<and> ct_not_in_release_q s
-                           \<and> valid_machine_time s \<and> current_time_bounded 5 s
+                           \<and> valid_machine_time s \<and> current_time_bounded s
                            \<and> consumed_time_bounded s
                            \<and> cur_sc_offset_ready (consumed_time s) s
                            \<and> cur_sc_offset_sufficient (consumed_time s) s"
@@ -436,7 +436,7 @@ lemma valid_machine_time_init[simp]:
   done
 
 lemma current_time_bounded_init[simp]:
-  "current_time_bounded 5 init_A_st"
+  "current_time_bounded init_A_st"
   apply (insert getCurrentTime_buffer_no_overflow)
   apply (clarsimp simp: current_time_bounded_def init_A_st_def)
   done

@@ -391,17 +391,16 @@ lemma performInvocation_corres:
    corres (dc \<oplus> (=))
      (einvs and valid_machine_time and valid_invocation i
             and schact_is_rct
-            and current_time_bounded 2
+            and current_time_bounded
             and ct_active
             and ct_released
             and ct_not_in_release_q
             and (\<lambda>s. (\<exists>w w2 b c. i = Invocations_A.InvokeEndpoint w w2 b c) \<longrightarrow> st_tcb_at simple (cur_thread s) s)
-            and cur_sc_active and current_time_bounded 5 and consumed_time_bounded
+            and cur_sc_active and current_time_bounded and consumed_time_bounded
             and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
             and (\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s))
      (invs' and sch_act_simple and valid_invocation' i' and ct_active' and (\<lambda>s. vs_valid_duplicates' (ksPSpace s)))
      (perform_invocation block call can_donate i) (performInvocation block call can_donate i')"
-  supply current_time_bounded_strengthen[of 2 _ 0, elim!]
   apply (simp add: performInvocation_def)
   apply add_sym_refs
   apply (case_tac i)
@@ -1279,7 +1278,7 @@ lemma handleInvocation_corres:
    corres (dc \<oplus> dc)
           (einvs and valid_machine_time and schact_is_rct and ct_active and ct_released
            and (\<lambda>s. active_sc_tcb_at (cur_thread s) s) and ct_not_in_release_q
-           and cur_sc_active and current_time_bounded 5 and consumed_time_bounded
+           and cur_sc_active and current_time_bounded and consumed_time_bounded
            and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
            and (\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s))
           (invs' and (\<lambda>s. vs_valid_duplicates' (ksPSpace s)))
@@ -1338,7 +1337,7 @@ lemma handleInvocation_corres:
                                  and (\<lambda>s. thread = cur_thread s)
                                  and st_tcb_at active thread
                                  and ct_not_in_release_q and ct_released
-                                 and cur_sc_active and current_time_bounded 5
+                                 and cur_sc_active and current_time_bounded
                                  and consumed_time_bounded
                                  and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
                                  and (\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s)"
@@ -1474,7 +1473,7 @@ lemma handleSend_corres:
   "corres (dc \<oplus> dc)
           (einvs and valid_machine_time and schact_is_rct and ct_active
            and ct_released and (\<lambda>s. active_sc_tcb_at (cur_thread s) s)
-           and ct_not_in_release_q and cur_sc_active and current_time_bounded 5
+           and ct_not_in_release_q and cur_sc_active and current_time_bounded
            and  consumed_time_bounded and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
            and (\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s))
           (invs' and (\<lambda>s. vs_valid_duplicates' (ksPSpace s)) and
@@ -1761,7 +1760,7 @@ lemma cur_sc_tcb_are_bound_sym:
 lemma endTimeslice_corres: (* called when ct_schedulable *)
   "corres dc
      (invs and valid_list and valid_sched_action and active_sc_valid_refills and valid_release_q
-      and valid_ready_qs and cur_sc_active and ct_active and current_time_bounded 2
+      and valid_ready_qs and cur_sc_active and ct_active and current_time_bounded
       and ct_not_queued
       and cur_sc_tcb_are_bound and scheduler_act_sane)
      invs'
@@ -1990,7 +1989,7 @@ lemma chargeBudget_corres:
   "corres dc
      (invs and valid_list and valid_sched_action and active_sc_valid_refills and valid_release_q
       and valid_ready_qs and released_ipc_queues and cur_sc_active
-      and current_time_bounded 5 and cur_sc_chargeable and scheduler_act_sane
+      and current_time_bounded and cur_sc_chargeable and scheduler_act_sane
       and ct_not_queued and ct_not_in_release_q and ct_not_blocked
       and cur_sc_offset_ready 0)
      invs'
@@ -2130,7 +2129,7 @@ lemma chargeBudget_corres:
 
 lemma checkBudget_corres: (* called when ct_schedulable or in checkBudgetRestart *)
   "corres (=)
-     (einvs and current_time_bounded 5 and cur_sc_offset_ready 0 and cur_sc_chargeable
+     (einvs and current_time_bounded and cur_sc_offset_ready 0 and cur_sc_chargeable
       and cur_sc_active and ct_not_blocked and current_time_bounded 2
       and ct_not_queued and ct_not_in_release_q and scheduler_act_sane)
      invs'
@@ -2159,7 +2158,7 @@ lemma checkBudget_corres: (* called when ct_schedulable or in checkBudgetRestart
 lemma handleYield_corres:
   "corres dc
      (einvs and ct_active and cur_sc_active and schact_is_rct and scheduler_act_sane
-      and current_time_bounded 5 and cur_sc_offset_ready 0
+      and current_time_bounded and cur_sc_offset_ready 0
       and ct_not_queued and ct_not_in_release_q and current_time_bounded 2)
      invs'
      handle_yield handleYield"
@@ -2302,7 +2301,7 @@ lemmas cteDeleteOne_st_tcb_at_simple'[wp] =
 lemma handleCall_corres:
   "corres (dc \<oplus> dc) (einvs and valid_machine_time and schact_is_rct and ct_active
                      and ct_released and (\<lambda>s. active_sc_tcb_at (cur_thread s) s)
-                     and ct_not_in_release_q and cur_sc_active and current_time_bounded 5
+                     and ct_not_in_release_q and cur_sc_active and current_time_bounded
                      and consumed_time_bounded
                      and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
                      and (\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s))
