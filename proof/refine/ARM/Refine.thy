@@ -676,12 +676,12 @@ lemma active_sc_tcb_at_ct_cur_sc_active:
 
 lemma kernel_preemption_corres:
   "corres (dc \<oplus> dc)
-     (einvs and current_time_bounded 5 and scheduler_act_sane
+     (einvs and current_time_bounded and scheduler_act_sane
       and (\<lambda>s. schact_is_rct s \<longrightarrow> cur_sc_active s)
       and (\<lambda>s. schact_is_rct s \<longrightarrow> ct_in_state activatable s)
       and cur_sc_chargeable and ct_not_blocked
       and (\<lambda>s. cur_sc_active s \<longrightarrow> cur_sc_offset_ready (consumed_time s) s) and ct_not_queued
-      and current_time_bounded 2 and consumed_time_bounded and ct_not_in_release_q)
+      and consumed_time_bounded and ct_not_in_release_q)
       invs'
      (liftE preemption_path)
      (liftE (do irq_opt <- doMachineOp (getActiveIRQ True);
@@ -716,7 +716,7 @@ lemma kernel_preemption_corres:
                   apply (rule corres_return_trivial)
                  apply wpsimp
                 apply wpsimp
-               apply (clarsimp simp: valid_sched_def current_time_bounded_strengthen runnable_eq_active
+               apply (clarsimp simp: valid_sched_def runnable_eq_active
                                      schedulable_def2 active_sc_tcb_at_def2 tcb_at_kh_simps[symmetric]
                                      pred_tcb_at_def obj_at_def)
                apply (rename_tac scp tcb)
@@ -781,7 +781,7 @@ lemma kernel_preemption_corres:
       apply wpsimp
      apply (rule_tac Q="\<lambda>_ s. invs s \<and>  valid_sched s \<and> valid_list s \<and> scheduler_act_sane s \<and>
                               consumed_time_bounded s \<and> ct_not_blocked s \<and> ct_not_in_release_q s \<and>
-                              current_time_bounded 5 s \<and> cur_sc_chargeable s \<and>
+                              current_time_bounded s \<and> cur_sc_chargeable s \<and>
                               (cur_sc_active s \<longrightarrow> cur_sc_offset_ready (consumed_time s) s) \<and>
                               (schact_is_rct s \<longrightarrow> cur_sc_active s) \<and> ct_not_queued s \<and>
                               (schact_is_rct s \<longrightarrow> ct_in_state activatable s)"
@@ -792,21 +792,18 @@ lemma kernel_preemption_corres:
       apply (clarsimp simp: invs_def valid_state_def valid_pspace_def valid_objs_valid_tcbs
                             valid_sched_def cur_tcb_def ct_in_state_kh_simp[symmetric])
       apply (intro conjI; clarsimp simp: schedulable_def2 ct_in_state_def)
-         apply (clarsimp simp: current_time_bounded_def)
+        apply (clarsimp simp: current_time_bounded_def)
         apply (rule context_conjI)
          apply (clarsimp simp: cur_sc_tcb_def sc_tcb_sc_at_def obj_at_def is_sc_obj)
          apply (erule (1) valid_sched_context_size_objsI)
         apply clarsimp
-        apply (rule conjI, clarsimp simp: current_time_bounded_strengthen)
-        apply clarsimp
        apply (frule (1) cur_sc_chargeable_when_ct_active_sc)
        apply (frule (1) active_sc_tcb_at_ct_cur_sc_active[THEN iffD2])
        apply (clarsimp simp: current_time_bounded_def)
-      apply (rule conjI; clarsimp simp: current_time_bounded_strengthen)
       apply (rule context_conjI)
        apply (clarsimp simp: vs_all_heap_simps obj_at_def)
       apply (drule consumed_time_bounded_helper)
-       apply (clarsimp simp: current_time_bounded_strengthen[of 5])
+       apply clarsimp
       apply clarsimp
      apply wpsimp
     apply (rule_tac Q="\<lambda>irq s. invs' s \<and> sc_at' (ksCurSc s) s \<and>
@@ -821,7 +818,7 @@ lemma kernel_preemption_corres:
 
 lemma kernel_corres':
   "corres dc (einvs and (\<lambda>s. event \<noteq> Interrupt \<longrightarrow> ct_running s) and (ct_running or ct_idle)
-              and current_time_bounded 5 and consumed_time_bounded and valid_machine_time
+              and current_time_bounded and consumed_time_bounded and valid_machine_time
               and ct_not_in_release_q and cur_sc_active
               and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
               and (\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s)
@@ -877,7 +874,7 @@ lemma kernel_corres':
                                  (schact_is_rct s \<longrightarrow> cur_sc_active s) \<and> ct_not_queued s \<and>
                                  (schact_is_rct s \<longrightarrow> ct_in_state activatable s) \<and>
                                  (cur_sc_active s \<longrightarrow> cur_sc_offset_ready (consumed_time s) s) \<and>
-                                 ct_not_blocked s \<and> current_time_bounded 5 s \<and>
+                                 ct_not_blocked s \<and> current_time_bounded s \<and>
                                  ct_not_in_release_q s \<and> consumed_time_bounded s"
                in hoare_post_impErr[where Q=Q and R=Q for Q])
           apply (wpsimp wp: handle_event_schact_is_rct_imp_ct_activatable
@@ -886,10 +883,10 @@ lemma kernel_corres':
                             handle_event_cur_sc_chargeable handle_event_cur_sc_more_than_ready
                             handle_event_valid_sched)
          apply simp
-        apply (clarsimp simp: current_time_bounded_strengthen cur_sc_chargeable_def)
+        apply (clarsimp simp: cur_sc_chargeable_def)
        apply (rule_tac Q="\<lambda>_. \<top>" and E="\<lambda>_. invs'" in hoare_post_impErr)
          apply wpsimp+
-      apply (rule_tac P="invs and valid_sched and current_time_bounded 5
+      apply (rule_tac P="invs and valid_sched and current_time_bounded
                          and ct_ready_if_schedulable and scheduler_act_sane
                          and (\<lambda>s. schact_is_rct s \<longrightarrow> cur_sc_active s)
                          and (\<lambda>s. schact_is_rct s \<longrightarrow> ct_in_state activatable s)
@@ -901,7 +898,7 @@ lemma kernel_corres':
        apply (simp add: rct_imp_activatable'_asrt_def)
        apply (rule corres_guard_imp)
          apply (rule corres_split_deprecated [OF _ schedule_corres])
-           apply (rule_tac P="invs and valid_sched and current_time_bounded 5
+           apply (rule_tac P="invs and valid_sched and current_time_bounded
                               and cur_sc_active and schact_is_rct
                               and ct_in_state activatable
                               and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s \<and>
@@ -921,7 +918,7 @@ lemma kernel_corres':
                             schedule_cur_sc_active schedule_ct_activateable
                             schedule_cur_sc_offset_ready_and_sufficient)
          apply (wpsimp wp: schedule_invs' schedule_sch)
-        apply (clarsimp simp: current_time_bounded_strengthen)
+        apply clarsimp
        apply clarsimp
       apply (clarsimp simp: rct_imp_activatable'_asrt_def)
       apply (clarsimp simp: ct_in_state_def ct_in_state'_def)
@@ -934,7 +931,7 @@ lemma kernel_corres':
       apply (rename_tac st; case_tac st; clarsimp)
      apply wpsimp
       apply (wpsimp wp: preemption_path_valid_sched
-                        preemption_path_current_time_bounded_5
+                        preemption_path_current_time_bounded
                         preemption_point_scheduler_act_sane
                         preemption_path_schact_is_rct_imp_ct_not_in_release_q
                         preemption_path_cur_sc_more_than_ready
@@ -976,7 +973,7 @@ lemma kernel_corres':
 
 lemma kernel_corres:
   "corres dc (einvs and (\<lambda>s. event \<noteq> Interrupt \<longrightarrow> ct_running s) and (ct_running or ct_idle)
-              and current_time_bounded 5 and consumed_time_bounded and valid_machine_time
+              and current_time_bounded and consumed_time_bounded and valid_machine_time
               and ct_not_in_release_q and cur_sc_active
               and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
               and (\<lambda>s. cur_sc_offset_sufficient (consumed_time s) s)

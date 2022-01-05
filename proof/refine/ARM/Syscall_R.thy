@@ -1599,7 +1599,7 @@ lemma getBoundNotification_corres:
   done
 
 lemma handleRecv_isBlocking_corres':
-   "corres dc (einvs and ct_in_state active and current_time_bounded 2
+   "corres dc (einvs and ct_in_state active and current_time_bounded
                and scheduler_act_sane and ct_not_queued and ct_not_in_release_q
                and (\<lambda>s. ex_nonz_cap_to (cur_thread s) s))
               (invs' and ct_in_state' simple'
@@ -1692,7 +1692,7 @@ lemma handleRecv_isBlocking_corres':
   done
 
 lemma handleRecv_isBlocking_corres:
-  "corres dc (einvs and ct_active and scheduler_act_sane and current_time_bounded 2
+  "corres dc (einvs and ct_active and scheduler_act_sane and current_time_bounded
               and ct_not_queued and ct_not_in_release_q)
              (invs' and ct_active' and sch_act_sane and
                     (\<lambda>s. \<forall>p. ksCurThread s \<notin> set (ksReadyQueues s p)))
@@ -2130,7 +2130,7 @@ lemma chargeBudget_corres:
 lemma checkBudget_corres: (* called when ct_schedulable or in checkBudgetRestart *)
   "corres (=)
      (einvs and current_time_bounded and cur_sc_offset_ready 0 and cur_sc_chargeable
-      and cur_sc_active and ct_not_blocked and current_time_bounded 2
+      and cur_sc_active and ct_not_blocked
       and ct_not_queued and ct_not_in_release_q and scheduler_act_sane)
      invs'
      check_budget checkBudget"
@@ -2159,7 +2159,7 @@ lemma handleYield_corres:
   "corres dc
      (einvs and ct_active and cur_sc_active and schact_is_rct and scheduler_act_sane
       and current_time_bounded and cur_sc_offset_ready 0
-      and ct_not_queued and ct_not_in_release_q and current_time_bounded 2)
+      and ct_not_queued and ct_not_in_release_q)
      invs'
      handle_yield handleYield"
   (is "corres _ ?pre ?pre' _ _")
@@ -2599,9 +2599,9 @@ lemma released_imp_active_sc_tcb_at:
 
 lemma checkBudgetRestart_corres:
   "corres (=)
-     (einvs and current_time_bounded 5 and cur_sc_offset_ready 0
+     (einvs and current_time_bounded and cur_sc_offset_ready 0
       and cur_sc_active and ct_in_state activatable and schact_is_rct
-      and ct_not_queued and ct_not_in_release_q and current_time_bounded 2)
+      and ct_not_queued and ct_not_in_release_q)
      invs'
      check_budget_restart checkBudgetRestart"
   unfolding check_budget_restart_def checkBudgetRestart_def
@@ -2629,7 +2629,7 @@ lemma handleInv_handleRecv_corres:
   "corres (dc \<oplus> dc)
      (einvs and ct_running and (\<lambda>s. scheduler_action s = resume_cur_thread) and
       valid_machine_time and
-      current_time_bounded 5 and
+      current_time_bounded and
       consumed_time_bounded and
       cur_sc_active and
       ct_released and
@@ -2679,7 +2679,7 @@ lemma handleInv_handleRecv_corres:
    apply (rule corres_guard_imp)
      apply (rule corres_split_liftEE[OF getCapReg_corres_gen])
        apply (rule corres_splitEE[OF _ handleInvocation_corres])
-           apply (rule_tac P="(einvs and ct_active and scheduler_act_sane and current_time_bounded 2
+           apply (rule_tac P="(einvs and ct_active and scheduler_act_sane and current_time_bounded
                               and ct_not_queued and ct_not_in_release_q)"
                       and P'="(invs')"
                   in corres_inst)
@@ -2702,8 +2702,7 @@ lemma handleInv_handleRecv_corres:
            apply (case_tac "scheduler_action s"; simp)
           apply simp
          apply simp
-        apply ((wpsimp wp: handle_invocation_valid_sched
-              | strengthen current_time_bounded_strengthen[where k=5])+)[1]
+        apply (wpsimp wp: handle_invocation_valid_sched)
        apply wpsimp
       apply wpsimp
      apply wpsimp
@@ -2720,7 +2719,7 @@ abbreviation (input)
   "a_pre \<equiv> (einvs and ct_running and
          (\<lambda>s. scheduler_action s = resume_cur_thread) and
          valid_machine_time and
-         current_time_bounded 5 and
+         current_time_bounded and
          consumed_time_bounded and
          cur_sc_active and (ct_active or ct_idle) and
          ct_not_in_release_q and
@@ -2749,7 +2748,7 @@ lemma updateTimeStamp_checkBudgetRestart_helper:
       apply (rule_tac P="\<lambda> s. (cur_sc_active s \<longrightarrow> cur_sc_offset_ready (consumed_time s) s)
                                \<and> cur_sc_active s \<and> ct_running s \<and> valid_machine_time s
                                \<and> ct_released s \<and> ct_not_in_release_q s \<and> ct_not_queued s
-                               \<and> current_time_bounded 5 s \<and> consumed_time_bounded s \<and> einvs s
+                               \<and> current_time_bounded s \<and> consumed_time_bounded s \<and> einvs s
                                \<and> scheduler_action s = resume_cur_thread"
                  and P'=c_pre in corres_inst)
       apply (rule corres_guard_imp)
@@ -2760,7 +2759,7 @@ lemma updateTimeStamp_checkBudgetRestart_helper:
            apply (rule_tac P="\<lambda>s. (cur_sc_offset_ready (consumed_time s) s \<and> einvs s
                                    \<and> cur_sc_active s \<and> valid_machine_time s \<and> ct_running s
                                    \<and> ct_released s \<and> ct_not_in_release_q s \<and> ct_not_queued s
-                                   \<and> current_time_bounded 5 s \<and> consumed_time_bounded s
+                                   \<and> current_time_bounded s \<and> consumed_time_bounded s
                                    \<and> scheduler_action s = resume_cur_thread)
                                    \<and> cur_sc_offset_sufficient (consumed_time s) s"
                       and P'=c_pre in corres_inst)
@@ -2772,10 +2771,10 @@ lemma updateTimeStamp_checkBudgetRestart_helper:
          apply (wpsimp wp: check_budget_restart_false check_budget_restart_true')
         apply (wpsimp wp: checkBudgetRestart_false checkBudgetRestart_true)
        apply (clarsimp dest!: active_from_running
-                        simp: cur_sc_offset_ready_def current_time_bounded_strengthen pred_map_def
+                        simp: cur_sc_offset_ready_def pred_map_def
                               ct_in_state_weaken[OF _ active_activatable])
       apply clarsimp
-     apply (wpsimp wp: update_time_stamp_current_time_bounded_5
+     apply (wpsimp wp: update_time_stamp_current_time_bounded
                        update_time_stamp_cur_sc_offset_ready_cs)
     apply wpsimp
    apply clarsimp+
@@ -2797,7 +2796,7 @@ lemma updateTimeStamp_checkBudgetRestart_helperE:
       apply (rule_tac P="\<lambda> s. (cur_sc_active s \<longrightarrow> cur_sc_offset_ready (consumed_time s) s)
                                \<and> cur_sc_active s \<and> ct_running s \<and> valid_machine_time s
                                \<and> ct_released s \<and> ct_not_in_release_q s \<and> ct_not_queued s
-                               \<and> current_time_bounded 5 s \<and> consumed_time_bounded s \<and> einvs s
+                               \<and> current_time_bounded s \<and> consumed_time_bounded s \<and> einvs s
                                \<and> scheduler_action s = resume_cur_thread"
                  and P'=c_pre in corres_inst)
       apply (rule corres_guard_imp)
@@ -2808,7 +2807,7 @@ lemma updateTimeStamp_checkBudgetRestart_helperE:
            apply (rule_tac P="\<lambda>s. (cur_sc_offset_ready (consumed_time s) s \<and> einvs s
                                    \<and> cur_sc_active s \<and> valid_machine_time s \<and> ct_running s
                                    \<and> ct_released s \<and> ct_not_in_release_q s \<and> ct_not_queued s
-                                   \<and> current_time_bounded 5 s \<and> consumed_time_bounded s
+                                   \<and> current_time_bounded s \<and> consumed_time_bounded s
                                    \<and> scheduler_action s = resume_cur_thread)
                                    \<and> cur_sc_offset_sufficient (consumed_time s) s"
                       and P'=c_pre in corres_inst)
@@ -2821,10 +2820,10 @@ lemma updateTimeStamp_checkBudgetRestart_helperE:
          apply (wpsimp wp: check_budget_restart_false check_budget_restart_true')
         apply (wpsimp wp: checkBudgetRestart_false checkBudgetRestart_true)
        apply (clarsimp dest!: active_from_running
-                        simp: cur_sc_offset_ready_def current_time_bounded_strengthen pred_map_def
+                        simp: cur_sc_offset_ready_def pred_map_def
                               ct_in_state_weaken[OF _ active_activatable])
       apply clarsimp
-     apply (wpsimp wp: update_time_stamp_current_time_bounded_5
+     apply (wpsimp wp: update_time_stamp_current_time_bounded
                        update_time_stamp_cur_sc_offset_ready_cs)
     apply wpsimp
    apply clarsimp+
@@ -2834,7 +2833,7 @@ lemma handleEvent_corres:
   "corres (dc \<oplus> dc)
      (einvs and (\<lambda>s. event \<noteq> Interrupt \<longrightarrow> ct_running s)
       and (\<lambda>s. scheduler_action s = resume_cur_thread)
-      and valid_machine_time and current_time_bounded 5
+      and valid_machine_time and current_time_bounded
       and consumed_time_bounded and cur_sc_active and (ct_active or ct_idle)
       and ct_not_in_release_q and ct_not_queued
       and (\<lambda>s. cur_sc_offset_ready (consumed_time s) s)
@@ -2847,7 +2846,7 @@ lemma handleEvent_corres:
 proof -
   have hw:
     "\<And>isBlocking canGrant.
-     corres dc (einvs and ct_running and valid_machine_time and current_time_bounded 2
+     corres dc (einvs and ct_running and valid_machine_time and current_time_bounded
                 and ct_released and (\<lambda>s. scheduler_action s = resume_cur_thread)
                 and ct_not_in_release_q and ct_not_queued)
                (invs' and ct_running'
@@ -2879,7 +2878,7 @@ proof -
                                       corres_guard_imp[OF handleInv_handleRecv_corres]
                                       corres_guard_imp[OF handleYield_corres]
                                       active_from_running active_from_running' released_imp_active_sc_tcb_at
-                               simp: simple_sane_strg current_time_bounded_strengthen
+                               simp: simple_sane_strg
                               dest!: schact_is_rct)[11]
         apply (rule updateTimeStamp_checkBudgetRestart_helper)
         apply (rule corres_split')
@@ -2914,7 +2913,7 @@ proof -
              apply (rule_tac P="\<lambda> s. (cur_sc_active s \<longrightarrow> cur_sc_offset_ready (consumed_time s) s)
                                       \<and> cur_sc_active s \<and> valid_machine_time s \<and> (ct_active s \<or> ct_idle s)
                                       \<and> ct_not_in_release_q s \<and> ct_not_queued s
-                                      \<and> current_time_bounded 5 s \<and> consumed_time_bounded s \<and> einvs s
+                                      \<and> current_time_bounded s \<and> consumed_time_bounded s \<and> einvs s
                                       \<and> scheduler_action s = resume_cur_thread"
                         and P'="(invs' and (\<lambda>s. vs_valid_duplicates' (ksPSpace s)) and
                                  (\<lambda>s. ksSchedulerAction s = ResumeCurrentThread)) and
@@ -2923,14 +2922,14 @@ proof -
                     in corres_inst)
              apply (rule corres_guard_imp)
                apply (rule corres_split[OF checkBudget_corres])
-                 apply (rule_tac P="einvs and current_time_bounded 0"
+                 apply (rule_tac P="einvs and current_time_bounded"
                             and P'="invs' and (\<lambda>s. \<forall>x. active = Some x \<longrightarrow> intStateIRQTable (ksInterruptState s) x \<noteq> irqstate.IRQInactive)"
                         in corres_inst)
                  apply (case_tac active; simp)
                  apply (rule handleInterrupt_corres)
                 apply (wpsimp wp: check_budget_valid_sched)
                apply (wpsimp wp: hoare_vcg_all_lift hoare_vcg_imp_lift)
-              apply (wpsimp wp: update_time_stamp_current_time_bounded_5 hoare_vcg_disj_lift
+              apply (wpsimp wp: update_time_stamp_current_time_bounded hoare_vcg_disj_lift
                                 update_time_stamp_cur_sc_offset_ready_cs)
               apply (clarsimp simp: cur_sc_offset_ready_weaken_zero active_from_running current_time_bounded_def)
               apply (frule invs_cur_sc_chargeableE)
@@ -2944,7 +2943,7 @@ proof -
               apply (rule ct_activatable_ct_not_blocked)
               apply (fastforce simp: ct_in_state_def pred_tcb_at_def obj_at_def dest!: active_activatable)
              apply clarsimp
-            apply (wpsimp wp: update_time_stamp_current_time_bounded_5 hoare_vcg_disj_lift
+            apply (wpsimp wp: update_time_stamp_current_time_bounded hoare_vcg_disj_lift
                               update_time_stamp_cur_sc_offset_ready_cs)
            apply wpsimp
           apply (rule corres_Id, simp+)
