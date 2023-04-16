@@ -588,9 +588,19 @@ definition select_user_trace :: "('other_state \<times> ('fch,'pch) state) \<Rig
   "select_user_trace os_s ta \<equiv>
     select_trace (\<lambda>(os, s) ta. traces_obeying_set ta \<inter> time_bounded_traces s) os_s ta"
 
+definition not_L2_flush where
+  "not_L2_flush i \<equiv> case i of IFlushL2 _ \<Rightarrow> False | _ \<Rightarrow> True"
+
+fun
+  contains_no_L2_flushes :: "trace \<Rightarrow> bool"
+where
+  "contains_no_L2_flushes [] = True"
+| "contains_no_L2_flushes (i # r) = (contains_no_L2_flushes r \<and> not_L2_flush i)"
+
+(* note: adding an assertion that the dirty trace doesn't do any pch flushes *)
 definition select_public_trace :: "('other_state \<times> ('fch,'pch) state) \<Rightarrow> time \<Rightarrow> vpaddr set \<Rightarrow> trace" where
   "select_public_trace os_s wcet ta \<equiv> 
-    select_trace (\<lambda>(os, s) ta. traces_obeying_set ta \<inter> WCET_bounded_traces wcet s) os_s ta"
+    select_trace (\<lambda>(os, s) ta. traces_obeying_set ta \<inter> WCET_bounded_traces wcet s \<inter> {t. contains_no_L2_flushes t}) os_s ta"
 
 definition pad_time :: "time \<Rightarrow> time" where
   "pad_time t \<equiv> t + dirty_step_WCET + fch_flush_WCET + pch_flush_WCET kernel_shared_precise"
@@ -668,7 +678,8 @@ lemma ma_single_step_enabled:
    \<exists>s' os'. ((os, s), os', s') \<in> {(s, s'). s' \<in> steps maStep {s} [()]} \<and> ab.reachable os'"
   apply (clarsimp simp: steps_def maStep_def)
   apply (cases "will_domain_switch os"; clarsimp)
-   using ab.enabled_Step ab.reachable_Step apply fastforce
+   using ab.enabled_Step ab.reachable_Step apply clarsimp
+   using ab.enabled_Step ab.reachable_Step apply blast
   using ab.enabled_Step ab.reachable_Step apply blast
 done
 
@@ -990,6 +1001,7 @@ lemma d_not_running: "\<lbrakk>
 lemma dirty_step_from_d:
   assumes
     "i \<in> trace_units_obeying_set {(va, pa) | va pa. pa \<in> (all_paddrs_of u \<union> all_paddrs_of u' \<union> kernel_shared_precise)}"
+    "not_L2_flush i"
     "d = u"
     "((os, s), (ot, t\<lparr>tm:=tm s\<rparr>)) \<in> uwr d"
     "s' = trace_step i s"
@@ -1020,6 +1032,7 @@ next
 next
   case (IFlushL2 pas)
   then show ?thesis using assms
+    (*
     apply (clarsimp simp: uwr_def uwr_running_def)
     apply (clarsimp simp: pch_same_for_domain_and_shared_def)
     (* for now let's only consider the cases where this program might
@@ -1027,7 +1040,8 @@ next
        restriction, but would probably need to change some locale assumptions for that. *)
     apply (prop_tac "pas = kernel_shared_precise")
      subgoal sorry
-    apply (metis pch_collision_flush pch_partitioned_flush)
+    apply (metis pch_collision_flush pch_partitioned_flush) *)
+    apply (clarsimp simp: not_L2_flush_def)
     done
 next
   case (IPadToTime x5)
@@ -1039,6 +1053,7 @@ qed
 lemma dirty_step_to_d:
   assumes
     "i \<in> trace_units_obeying_set {(va, pa) | va pa. pa \<in> (all_paddrs_of u \<union> all_paddrs_of u' \<union> kernel_shared_precise)}"
+    "not_L2_flush i"
     "d = u' \<and> d \<noteq> u"
     "((os, s), (ot, t\<lparr>tm:=tm s\<rparr>)) \<in> uwr d"
     "s' = trace_step i s"
@@ -1069,6 +1084,7 @@ next
 next
   case (IFlushL2 pas)
   then show ?thesis using assms
+    (*
     apply (clarsimp simp: uwr_def uwr_notrunning_def)
     apply (clarsimp simp: pch_same_for_domain_except_shared_def)
     (* for now let's only consider the cases where this program might
@@ -1077,6 +1093,8 @@ next
     apply (prop_tac "pas \<subseteq> kernel_shared_expanded")
      subgoal sorry
     apply (smt collision_in_full_collision_set in_mono kernel_shared_expanded_full_collision_set pch_collision_flush pch_partitioned_flush)
+    *)
+    apply (clarsimp simp: not_L2_flush_def)
     done
 next
   case (IPadToTime x5)
@@ -1088,6 +1106,7 @@ qed
 lemma dirty_step_unrelated:
   assumes
     "i \<in> trace_units_obeying_set {(va, pa) | va pa. pa \<in> (all_paddrs_of u \<union> all_paddrs_of u' \<union> kernel_shared_precise)}"
+    "not_L2_flush i"
     "d \<noteq> u \<and> d \<noteq> u'"
     "((os, s), (ot, t\<lparr>tm:=tm s\<rparr>)) \<in> uwr d"
     "s' = trace_step i s"
@@ -1118,6 +1137,7 @@ next
 next
   case (IFlushL2 pas)
   then show ?thesis using assms
+    (*
     apply (clarsimp simp: uwr_def uwr_notrunning_def)
     apply (clarsimp simp: pch_same_for_domain_except_shared_def)
     (* for now let's only consider the cases where this program might
@@ -1126,6 +1146,8 @@ next
     apply (prop_tac "pas \<subseteq> kernel_shared_expanded")
      subgoal sorry
     apply (smt collision_in_full_collision_set in_mono kernel_shared_expanded_full_collision_set pch_collision_flush pch_partitioned_flush)
+    *)
+    apply (clarsimp simp: not_L2_flush_def)
     done
 next
   case (IPadToTime x5)
@@ -1137,6 +1159,7 @@ qed
 lemma dirty_multistep_aux: "\<lbrakk>
    p \<in> traces_obeying_set {(va, pa) | va pa.
            pa \<in> (all_paddrs_of u \<union> all_paddrs_of u' \<union> kernel_shared_precise)};
+   contains_no_L2_flushes p;
    current_domain os = u;
    d = u \<or> (d = u' \<and> d \<noteq> u) \<or> (d \<noteq> u \<and> d \<noteq> u');
    \<comment> \<open>initial states s and t hold uwr (apart from time)\<close>
@@ -1171,6 +1194,7 @@ lemma dirty_multistep_aux: "\<lbrakk>
 lemma dirty_multistep: "\<lbrakk>
    p \<in> traces_obeying_set {(va, pa) | va pa.
            pa \<in> (all_paddrs_of u \<union> all_paddrs_of u' \<union> kernel_shared_precise)};
+   contains_no_L2_flushes p;
    current_domain os = u;
    d = u \<or> (d = u' \<and> d \<noteq> u) \<or> (d \<noteq> u \<and> d \<noteq> u');
    \<comment> \<open>initial states s and t hold uwr (apart from time)\<close>
@@ -1396,12 +1420,28 @@ lemma ta_dirty_inv_applied:
        pa \<in> all_paddrs_of u \<or>
        pa \<in> all_paddrs_of u' \<or>
        pa \<in> kernel_shared_precise}"
-  apply (smt Collect_cong Int_Collect Un_iff WCET_bounded_traces_def case_prodE case_prod_conv
-    dual_order.trans empty_in_traces_obeying_ta inf.cobounded1 le_iff_add select_public_trace_def
-    touched_addrs_dirty_inv_def trace_multistep.simps(1) traces_obeying_set_subset
-    ts.trace_from_superset)
+  apply (clarsimp simp: select_public_trace_def)
+  apply (rule trace_from_superset)
+   apply (clarsimp simp: WCET_bounded_traces_def)
+  apply (clarsimp simp: touched_addrs_dirty_inv_def)
+  apply (meson in_mono traces_obeying_set_subset)
   done
-   
+
+lemma public_trace_contains_no_L2_flushes:
+  "contains_no_L2_flushes
+         (select_public_trace a b c)"
+  apply (clarsimp simp: select_public_trace_def)
+  apply (subgoal_tac "(select_trace
+       (\<lambda>(os, s) ta.
+           traces_obeying_set ta \<inter> WCET_bounded_traces b s \<inter>
+           {t. contains_no_L2_flushes t})
+       a c) \<in> {t. contains_no_L2_flushes t}")
+   apply clarsimp
+  apply (rule trace_from_superset)
+   apply (clarsimp simp: WCET_bounded_traces_def traces_obeying_set_def split:prod.splits)
+  apply (clarsimp split: prod.splits)
+  done
+
 lemma ma_confidentiality_u_ds:
   "\<lbrakk>will_domain_switch os;
   ma.uwr2 (os, s) Sched (ot, t);
@@ -1441,8 +1481,9 @@ lemma ma_confidentiality_u_ds:
    apply (rule dirty_multistep [where p="(select_public_trace (ot, t) dirty_step_WCET
            (touched_addrs (get_domainswitch_middle_state os)))"
           and u="current_domain os" and u'="get_next_domain os"]; (rule refl)?)
-     apply (drule middle_step_holds_dirty_ta; simp)
-     apply (rule ta_dirty_inv_applied, simp)
+      apply (drule middle_step_holds_dirty_ta; simp)
+      apply (rule ta_dirty_inv_applied, simp)
+     apply (rule public_trace_contains_no_L2_flushes)
     apply blast
    apply assumption
 
